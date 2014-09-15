@@ -42,43 +42,6 @@ def splitDataSet(dataSet, axis, value):
             reducedFeatVec.extend(featVec[axis+1:])
             retDataSet.append(reducedFeatVec)
     return retDataSet
-    
-def chooseBestFeatureToSplit1(dataSet):
-    numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
-    baseEntropy = calcShannonEnt(dataSet)
-    bestInfoGain = 0.0; bestFeature = -1
-    for i in range(numFeatures):        #iterate over all the features
-        featList = [example[i] for example in dataSet]#create a list of all the examples of this feature
-        uniqueVals = set(featList)       #get a set of unique values
-        newEntropy = 0.0
-        for value in uniqueVals:
-            subDataSet = splitDataSet(dataSet, i, value)
-            prob = len(subDataSet)/float(len(dataSet))
-            newEntropy += prob * calcShannonEnt(subDataSet)     
-        infoGain = baseEntropy - newEntropy     #calculate the info gain; ie reduction in entropy
-        if (infoGain > bestInfoGain):       #compare this to the best gain so far
-            bestInfoGain = infoGain         #if better than current best, set to best
-            bestFeature = i
-    return bestFeature                      #returns an integer
-
-def chooseBestFeatureToSplit(dataSet):
-    numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
-    baseEntropy = calcShannonEnt(dataSet)
-    bestInfoGain = 0.0; bestFeature = -1
-    for i in range(numFeatures):        #iterate over all the features
-        featList = [example[i] for example in dataSet]#create a list of all the examples of this feature
-        uniqueVals = set(featList)       #get a set of unique values
-        subDataSetArr = []
-        for value in uniqueVals:
-            subDataSet = splitDataSet(dataSet, i, value)
-            subDataSetArr.append(subDataSet)
-        #infoGain = getInfoGain(baseEntropy, subDataSetArr)	# C3.0
-        infoGain = getInfoGainRatio(getInfoGain(baseEntropy, subDataSetArr), subDataSetArr) # C4.5
-        #print infoGain
-        if (infoGain > bestInfoGain):       #compare this to the best gain so far
-            bestInfoGain = infoGain         #if better than current best, set to best
-            bestFeature = i
-    return bestFeature                      #returns an integer
 
 def getInfoGain(baseInfoGain, subDataSetArr):
 	lenDS = []
@@ -104,6 +67,25 @@ def getInfoGainRatio(baseEntropy, subDataSetArr):
 	#print sumEnt
 	#print '%f/%f' %(baseEntropy, sumEnt)
 	return baseEntropy/sumEnt
+    
+def chooseBestFeatureToSplit(dataSet):
+    numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
+    baseEntropy = calcShannonEnt(dataSet)
+    bestInfoGain = 0.0; bestFeature = -1
+    for i in range(numFeatures):        #iterate over all the features
+        featList = [example[i] for example in dataSet]#create a list of all the examples of this feature
+        uniqueVals = set(featList)       #get a set of unique values
+        subDataSetArr = []
+        for value in uniqueVals:
+            subDataSet = splitDataSet(dataSet, i, value)
+            subDataSetArr.append(subDataSet)
+        #infoGain = getInfoGain(baseEntropy, subDataSetArr)	# C3.0
+        infoGain = getInfoGainRatio(getInfoGain(baseEntropy, subDataSetArr), subDataSetArr) # C4.5
+        #print infoGain
+        if (infoGain > bestInfoGain):       #compare this to the best gain so far
+            bestInfoGain = infoGain         #if better than current best, set to best
+            bestFeature = i
+    return bestFeature                      #returns an integer
 
 def majorityCnt(classList):
     classCount={}
