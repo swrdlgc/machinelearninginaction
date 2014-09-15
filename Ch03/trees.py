@@ -16,6 +16,10 @@ def createDataSet():
     #change to discrete values
     return dataSet, labels
 
+def getEmpiricalEntropy(prob):
+	if prob == 0: return 0.
+	return -prob * log(prob, 2) #log base 2
+
 def calcShannonEnt(dataSet):
     numEntries = len(dataSet)
     labelCounts = {}
@@ -26,7 +30,8 @@ def calcShannonEnt(dataSet):
     shannonEnt = 0.0
     for key in labelCounts:
         prob = float(labelCounts[key])/numEntries
-        shannonEnt -= prob * log(prob,2) #log base 2
+        shannonEnt += getEmpiricalEntropy(prob)
+        #print '%s\t%d\t%.10f' %(key, labelCounts[key], shannonEnt)
     return shannonEnt
     
 def splitDataSet(dataSet, axis, value):
@@ -38,7 +43,7 @@ def splitDataSet(dataSet, axis, value):
             retDataSet.append(reducedFeatVec)
     return retDataSet
     
-def chooseBestFeatureToSplit(dataSet):
+def chooseBestFeatureToSplit1(dataSet):
     numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
     baseEntropy = calcShannonEnt(dataSet)
     bestInfoGain = 0.0; bestFeature = -1
@@ -55,6 +60,50 @@ def chooseBestFeatureToSplit(dataSet):
             bestInfoGain = infoGain         #if better than current best, set to best
             bestFeature = i
     return bestFeature                      #returns an integer
+
+def chooseBestFeatureToSplit(dataSet):
+    numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
+    baseEntropy = calcShannonEnt(dataSet)
+    bestInfoGain = 0.0; bestFeature = -1
+    for i in range(numFeatures):        #iterate over all the features
+        featList = [example[i] for example in dataSet]#create a list of all the examples of this feature
+        uniqueVals = set(featList)       #get a set of unique values
+        subDataSetArr = []
+        for value in uniqueVals:
+            subDataSet = splitDataSet(dataSet, i, value)
+            subDataSetArr.append(subDataSet)
+        #infoGain = getInfoGain(baseEntropy, subDataSetArr)	# C3.0
+        infoGain = getInfoGainRatio(getInfoGain(baseEntropy, subDataSetArr), subDataSetArr) # C4.5
+        #print infoGain
+        if (infoGain > bestInfoGain):       #compare this to the best gain so far
+            bestInfoGain = infoGain         #if better than current best, set to best
+            bestFeature = i
+    return bestFeature                      #returns an integer
+
+def getInfoGain(baseInfoGain, subDataSetArr):
+	lenDS = []
+	entDS = []
+	for subDataSet in subDataSetArr:
+		lenDS.append(len(subDataSet))
+		entDS.append(calcShannonEnt(subDataSet))
+	sumLen = float(sum(lenDS))
+	infoGain = [lenDS[i]*entDS[i]/sumLen for i in range(len(lenDS))]
+	sumInfoGain = sum(infoGain)
+	return baseInfoGain - sumInfoGain
+
+def getInfoGainRatio(baseEntropy, subDataSetArr):
+	lenDS = []
+	for subDataSet in subDataSetArr:
+		lenDS.append(len(subDataSet))
+	sumLen = float(sum(lenDS))
+	#print lenDS
+	#print sumLen
+	entDS = [getEmpiricalEntropy(lenDS[i]/sumLen) for i in range(len(lenDS))]
+	sumEnt = sum(entDS)
+	#print entDS
+	#print sumEnt
+	#print '%f/%f' %(baseEntropy, sumEnt)
+	return baseEntropy/sumEnt
 
 def majorityCnt(classList):
     classCount={}

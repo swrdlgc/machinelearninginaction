@@ -1,3 +1,4 @@
+age	prescript	astigmatic	tearRate
 young	myope	no	reduced	no lenses
 young	myope	no	normal	soft
 young	myope	yes	reduced	no lenses
