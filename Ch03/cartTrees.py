@@ -3,7 +3,6 @@ Created on Sep 16, 2014
 Decision Tree Source Code(cart) for Machine Learning in Action Ch. 3
 @author: swrd
 '''
-from math import log
 import operator
 
 def createDataSet():
@@ -32,14 +31,18 @@ def getGini(dataSet):
 def getSplits(dataSet, axis):
     labels = list(set(zip(*dataSet)[axis]))
     splits = []
-    for i in range(pow(2, len(labels))):
-        subslt = []
-        for j in range(len(labels)):
-            if ((1<<j)&i)!=0:
-                subslt.append(labels[j])
-        splits.append(subslt)
-    if len(splits) <= 2: return []
-    return splits[1:len(splits)-1]
+    sltflag = []
+    maxsltflag = pow(2, len(labels))
+    for i in range(maxsltflag):
+        if (maxsltflag - 1 - i) not in sltflag:
+            sltflag.append(i)
+            subslt = []
+            for j in range(len(labels)):
+                if ((1<<j)&i) != 0:
+                    subslt.append(labels[j])
+            splits.append(subslt)
+    if len(labels) <= 1: return []
+    return splits[1:len(splits)]
 
 def binSplitDataSet(dataSet, axis, value):
     yesDataSet = []
@@ -53,25 +56,22 @@ def binSplitDataSet(dataSet, axis, value):
             noDataSet.append(reducedFeatVec)
     return yesDataSet, noDataSet
 
-#modify to here
 def chooseBestFeatureToSplit(dataSet):
     numFeatures = len(dataSet[0]) - 1      #the last column is used for the labels
-    baseEntropy = calcShannonEnt(dataSet)
-    bestInfoGain = 0.0; bestFeature = -1
+    bestGini = float('inf'); 
+    bestFeature = -1
+    featSet = []
     for i in range(numFeatures):        #iterate over all the features
-        featList = [example[i] for example in dataSet]#create a list of all the examples of this feature
-        uniqueVals = set(featList)       #get a set of unique values
-        subDataSetArr = []
-        for value in uniqueVals:
-            subDataSet = splitDataSet(dataSet, i, value)
-            subDataSetArr.append(subDataSet)
-        #infoGain = getInfoGain(baseEntropy, subDataSetArr)	# C3.0
-        infoGain = getInfoGainRatio(getInfoGain(baseEntropy, subDataSetArr), subDataSetArr) # C4.5
-        #print infoGain
-        if (infoGain > bestInfoGain):       #compare this to the best gain so far
-            bestInfoGain = infoGain         #if better than current best, set to best
-            bestFeature = i
-    return bestFeature                      #returns an integer
+        splits = getSplits(dataSet, i)
+        for value in splits:            #iterate over all sub feature set
+            yesDataSet, noDataSet = binSplitDataSet(dataSet, i, value)
+            gini = getGini(yesDataSet)*len(yesDataSet)/len(dataSet) + getGini(noDataSet)*len(noDataSet)/len(dataSet)
+            #print gini, i, value
+            if(bestGini > gini):
+                bestGini = gini
+                bestFeature = i
+                featSet = value
+    return bestFeature, featSet
 
 def majorityCnt(classList):
     classCount={}
@@ -87,17 +87,21 @@ def createTree(dataSet,labels):
         return classList[0]#stop splitting when all of the classes are equal
     if len(dataSet[0]) == 1: #stop splitting when there are no more features in dataSet
         return majorityCnt(classList)
-    bestFeat = chooseBestFeatureToSplit(dataSet)
+    bestFeat, value = chooseBestFeatureToSplit(dataSet)
+    #print bestFeat, value
+    #print labels
     bestFeatLabel = labels[bestFeat]
     myTree = {bestFeatLabel:{}}
-    del(labels[bestFeat])
-    featValues = [example[bestFeat] for example in dataSet]
-    uniqueVals = set(featValues)
-    for value in uniqueVals:
-        subLabels = labels[:]       #copy all of labels, so trees don't mess up existing labels
-        myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value),subLabels)
+    yesDataSet, noDataSet = binSplitDataSet(dataSet, bestFeat, value)
+    allvalue = list(set([vec[bestFeat] for vec in dataSet ]))
+    rightvalue = [key for key in allvalue if key not in value]
+    left = ",".join(value)
+    right = ",".join(rightvalue)
+    myTree[bestFeatLabel][left] = createTree(yesDataSet, list(labels))
+    myTree[bestFeatLabel][right] = createTree(noDataSet, list(labels))
     return myTree                            
     
+#modify to here
 def classify(inputTree,featLabels,testVec):
     firstStr = inputTree.keys()[0]
     secondDict = inputTree[firstStr]
