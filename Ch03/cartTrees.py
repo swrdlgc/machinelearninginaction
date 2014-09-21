@@ -91,23 +91,27 @@ def createTree(dataSet,labels):
     #print bestFeat, value
     #print labels
     bestFeatLabel = labels[bestFeat]
+    del(labels[bestFeat])
     myTree = {bestFeatLabel:{}}
     yesDataSet, noDataSet = binSplitDataSet(dataSet, bestFeat, value)
     allvalue = list(set([vec[bestFeat] for vec in dataSet ]))
     rightvalue = [key for key in allvalue if key not in value]
-    left = ",".join(value)
-    right = ",".join(rightvalue)
+    left = ",".join([str(e) for e in value])
+    right = ",".join([str(e) for e in rightvalue])
     myTree[bestFeatLabel][left] = createTree(yesDataSet, list(labels))
     myTree[bestFeatLabel][right] = createTree(noDataSet, list(labels))
     return myTree                            
     
-#modify to here
 def classify(inputTree,featLabels,testVec):
     firstStr = inputTree.keys()[0]
     secondDict = inputTree[firstStr]
     featIndex = featLabels.index(firstStr)
-    key = testVec[featIndex]
-    valueOfFeat = secondDict[key]
+    key = str(testVec[featIndex])
+    valueOfFeat = {}
+    for sk in secondDict.keys():
+        ska = sk.split(',')
+        if key in ska:
+            valueOfFeat = secondDict[sk]
     if isinstance(valueOfFeat, dict): 
         classLabel = classify(valueOfFeat, featLabels, testVec)
     else: classLabel = valueOfFeat
